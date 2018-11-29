@@ -4,6 +4,7 @@ import argparse
 import base64
 import io
 import json
+import datetime
 
 import boto3
 from PIL import Image
@@ -28,19 +29,18 @@ TABLE_NAME = "Resightings"
 FIELDS = {
     "SituationImage": 0,
     "TagImage": 1,
-    "Date": 2,
+    "Timestamp": 2,
     "AnimalType": 3,
-    "Latitude": 4,
-    "Longitude": 5,
-    "TagLocation": 6,
-    "TagColor": 7,
-    "DeadOrAlive": 8,
-    "Condition": 9,
-    "Injured": 10,
-    "InjuredLocation": 11,
-    "Entangled": 12,
-    "EntangledLocation": 13,
-    "NuisanceBehaviors": 14,
+    "Location": 4,
+    "TagLocation": 5,
+    "TagColor": 6,
+    "DeadOrAlive": 7,
+    "Condition": 8,
+    "Injured": 9,
+    "InjuredLocation": 10,
+    "Entangled": 11,
+    "EntangledLocation": 12,
+    "NuisanceBehaviors": 13,
 }
 
 
@@ -61,11 +61,22 @@ def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Work
     workbook = Workbook(workbook_name)
     sheet = workbook.add_worksheet()
 
+    # Format object to center data and wrap text
+    cell_format = workbook.add_format()
+    cell_format.set_text_wrap()
+    cell_format.set_align("center")
+    cell_format.set_align("vcenter")
+
     # Add column headings
     for field_name, col_index in FIELDS.items():
         sheet.write(0, col_index, field_name)
-        # Set starting column width
-        sheet.set_column(0, col_index, 12)
+        # Set starting column width (modifies from range col_index -> col_index)
+        if "Image" in field_name:
+            # Images need a wider column
+            sheet.set_column(col_index, col_index, 45, cell_format)
+        else:
+            sheet.set_column(col_index, col_index, 12, cell_format)
+
 
     # For each resighting, slot the data in each field into its corresponding cell
     for row_num, resight in enumerate(resightings, 1):
@@ -75,9 +86,6 @@ def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Work
                 # image data needs special handling
                 # TODO: save image in a directory as well
                 if "Image" in field: 
-                    # Widen column here, if we do it earlier it's overriden
-                    sheet.set_column(FIELDS[field], col_index, 45)
-
                     # Read from json as string
                     binary = io.BytesIO(base64.b64decode(data))
                     img = Image.open(binary)
@@ -89,11 +97,15 @@ def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Work
 
                     # Insert into correct cell 
                     sheet.insert_image(
-                        row_num, FIELDS[field], "image", {"image_data": resized}
+                        row_num, FIELDS[field], "image", {"image_data": resized, "positioning": 1}
                     )
 
-                # Text data can be written as is
+                # Write other data, converting if necessary
                 else:
+                    if field == "Timestamp":
+                        # Convert epoch time to month/day/year
+                        data = datetime.datetime.fromtimestamp(data).strftime("%m/%d/%Y %H:%M:%S")
+
                     sheet.write(row_num, FIELDS[field], data)
             else:
                 print("Field not recognized: {}".format(field))
