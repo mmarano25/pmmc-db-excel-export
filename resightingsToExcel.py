@@ -7,6 +7,7 @@ import json
 import datetime
 
 import boto3
+from boto3.dynamodb.conditions import Attr
 from PIL import Image
 from xlsxwriter import Workbook
 
@@ -31,26 +32,56 @@ FIELDS = {
     "TagImage": 1,
     "Timestamp": 2,
     "AnimalType": 3,
-    "Location": 4,
-    "TagLocation": 5,
-    "TagColor": 6,
-    "DeadOrAlive": 7,
-    "Condition": 8,
-    "Injured": 9,
-    "InjuredLocation": 10,
-    "Entangled": 11,
-    "EntangledLocation": 12,
-    "NuisanceBehaviors": 13,
+    "Latitude": 4,
+    "Longitude": 5,
+    "Location": 6,
+    "TagLocation": 7,
+    "TagColor": 8,
+    "DeadOrAlive": 9,
+    "Condition": 10,
+    "Injured": 11,
+    "Entangled": 12,
+    "InjuredOrEntangledLocation": 13,
+    "NuisanceBehaviors": 14,
 }
 
 
 def get_resightings_range(date1: str, date2: str) -> [dict]:
     """Pulls desired resightings from cloud database"""
-    # Currently just gets all in table
+    try:
+        # Confirm date is in correct format
+        date1_epoch = int(datetime.datetime.strptime(date1, "%m/%d/%Y").strftime("%s"))
+        date2_epoch = int(datetime.datetime.strptime(date2, "%m/%d/%Y").strftime("%s"))
+    except ValueError:
+        raise RuntimeError("Could not read date format. Enter as day/month/year")
+
+    # Query database over date range
     dynamodb = boto3.resource('dynamodb', region_name=REGION_NAME, endpoint_url=ENDPOINT_URL)
     table = dynamodb.Table(TABLE_NAME)
-    data = table.scan()
-    return data["Items"]
+
+    result = table.scan(
+        FilterExpression=Attr("Timestamp").between(
+            date1_epoch, date2_epoch)
+    )
+
+    return result["Items"]
+
+
+def create_directory_of_resightings(resightings: list, dir_name: str) -> None:
+    # |- Resightings from Date1 to Date2
+    # |- |- Excel sheet
+    # |- |- ResightingDateXAnimalTypeYGPSLatLong
+    # |- |- |- SituationImage.jpg
+    # |- |- |- TagImage.jpg
+    # |- |- -- FormData.txt
+    # |- |- ResightingDateXAnimalTypeYGPSLatLong
+    # |- |- |- SituationImage.jpg
+    # |- |- |- TagImage.jpg
+    # |- -- -- FormData.txt
+    # TODO: 
+    #   - Pretty print form data in text file
+    #   - Create dir with correct name
+    pass
 
 
 def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Workbook:
@@ -63,6 +94,7 @@ def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Work
 
     # Format object to center data and wrap text
     cell_format = workbook.add_format()
+    cell_format.set_shrink()
     cell_format.set_text_wrap()
     cell_format.set_align("center")
     cell_format.set_align("vcenter")
@@ -80,7 +112,7 @@ def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Work
 
     # For each resighting, slot the data in each field into its corresponding cell
     for row_num, resight in enumerate(resightings, 1):
-        sheet.set_row(row_num, 175) # Set row height
+        sheet.set_row(row_num, 160) # Set row height
         for field, data in resight.items():
             if field in FIELDS:
                 # image data needs special handling
