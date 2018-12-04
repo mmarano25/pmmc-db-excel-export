@@ -8,13 +8,13 @@ class ResightingsGUI(tk.Tk):
                 "from the time range specified by the start and end date.\n It will also "
                 "save copies of each full size image and the associated form data in "
                 "their own folders for additional viewing.\n"
-                "Enter the dates in month/day/year format.")
+                "Enter the dates in month-day-year format.")
 
-    instr_text = "Enter the dates in month/day/year format."
+    instr_text = "Enter the dates in month-day-year format."
 
     err_title = "Invalid Date Format"
 
-    err_msg = "Please enter dates in day/month/year format."
+    err_msg = "Please enter dates in day-month-year format."
     
 
     def __init__(self, *args, **kwargs):
@@ -54,7 +54,7 @@ class ResightingsGUI(tk.Tk):
     def _create_sheet_with_dates(self):
         start = self.date_entry1.get().strip()
         end = self.date_entry2.get().strip()
-        dest = "test.xlsx"
+        dest = "Resightings_from_{d1}_to_{d2}.xlsx".format(d1=start, d2=end)
         try:
             get_resightings_to_Excel(start=start, end=end, dest=dest)
         except RuntimeError:

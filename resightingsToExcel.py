@@ -55,8 +55,8 @@ def get_resightings_range(date1: str, date2: str) -> [dict]:
     """Pulls desired resightings from cloud database"""
     try:
         # Confirm date is in correct format
-        date1_epoch = int(datetime.datetime.strptime(date1, "%m/%d/%Y").strftime("%s"))
-        date2_epoch = int(datetime.datetime.strptime(date2, "%m/%d/%Y").strftime("%s"))
+        date1_epoch = int(datetime.datetime.strptime(date1, "%m-%d-%Y").strftime("%s"))
+        date2_epoch = int(datetime.datetime.strptime(date2, "%m-%d-%Y").strftime("%s"))
     except ValueError:
         raise RuntimeError("Could not read date format. Enter as day/month/year")
 
