@@ -1,4 +1,5 @@
 *.swp
 *.xlsx
 *.vscode*
+*__pycache__
 
