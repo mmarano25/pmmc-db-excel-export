@@ -1,4 +1,12 @@
-"""Command line tool to convert resightings from a specific date range to Excel sheet"""
+"""
+Script to get resightings from the database between a specified date range and export 
+them to a formatted Excel sheet with copies of each resighting in their own folder.
+
+- It can be used either as a command line tool like or the resightings_to_Excel function
+  can be imported and used directly.
+- Note that full sized copies of the records are saved separately because the Excel 
+  library used does not support scaling images to fit the cells, only resizing them. 
+"""
 
 import argparse
 import base64
@@ -12,11 +20,8 @@ from PIL import Image
 from xlsxwriter import Workbook
 
 
-# Command line setup
-parser = argparse.ArgumentParser(
-    description="Gets sightings from cloud database from date1 to date2 and exports "
-                "them into an excel sheet saved at dest."
-)
+# Command line setup. The description is the first few lines of the docstring.
+parser = argparse.ArgumentParser(description="\n".join(__doc__.splitlines()[0:3])) 
 parser.add_argument("start", help="Range start date.")
 parser.add_argument("end", help="Range end date.")
 parser.add_argument("dest", help="Path to save Excel sheet at.")
@@ -144,12 +149,14 @@ def create_sheet_with_resightings(workbook_name: str, resightings: list) -> Work
     
     return workbook
 
+def get_resightings_to_Excel(start: str, end: str, dest: str) -> None:
+    resightings = get_resightings_range(start, end)
+
+    workbook = create_sheet_with_resightings(dest, resightings)
+
+    workbook.close() # Saves workbook
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
-
-    resightings = get_resightings_range(args.start, args.end)
-
-    workbook = create_sheet_with_resightings(args.dest, resightings)
-
-    workbook.close() # Saves workbook
+    get_resightings_to_Excel(args.start, args.end, args.dest)
